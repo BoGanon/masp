@@ -1,4 +1,4 @@
-/* macro.c - macro support for masp
+/**//* macro.c - macro support for masp
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
    Free Software Foundation, Inc.
    Copyright 2003 Johann Gunnar Oskarsson
@@ -91,9 +91,10 @@ static const char *macro_expand PARAMS ((int, sb *, macro_entry *, sb *, int));
  ((x) == ' ' || (x) == '\t' || (x) == ',' || (x) == '"' || (x) == ';' \
   || (x) == ')' || (x) == '(' \
   || ((macro_alternate || macro_mri) && ((x) == '<' || (x) == '>')))
-
+/**//*...'a'...*/
 #define ISBASE(x) \
   ((x) == 'b' || (x) == 'B' \
+   || (x) == 'a' || (x) == 'A' \
    || (x) == 'q' || (x) == 'Q' \
    || (x) == 'h' || (x) == 'H' \
    || (x) == 'd' || (x) == 'D')

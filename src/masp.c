@@ -1,4 +1,4 @@
-/* masp.c - MASP Assembly Preprocessor main program.
+/**//* masp.c - MASP Assembly Preprocessor main program.
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
    Free Software Foundation, Inc.
    Copyright 2003 Johann Gunnar Oskarsson
@@ -612,6 +612,15 @@ sb_strtol (idx, string, base, ptr)
     {
       int ch = string->ptr[idx];
       int dig = 0;
+/**/
+    if (base == 256)
+     {
+         dig = ch;
+	 if (dig == ' ' || dig == ',' || dig == ')' || dig == '\t')
+	    break;
+     }
+/**/
+    else {			
       if (ISDIGIT (ch))
 	dig = ch - '0';
       else if (ch >= 'a' && ch <= 'f')
@@ -620,7 +629,7 @@ sb_strtol (idx, string, base, ptr)
 	dig = ch - 'A' + 10;
       else
 	break;
-
+    }/**/
       if (dig >= base)
 	break;
 
@@ -1188,6 +1197,11 @@ change_base (idx, in, out)
 	    case 'D':
 	      base = 10;
 	      break;
+/**/
+	    case 'a':
+	    case 'A':
+	      base = 256;
+	      break;
 	    default:
 	      ERROR ((stderr, _("Illegal base character %c.\n"), in->ptr[idx]));
 	      base = 10;
@@ -1267,9 +1281,13 @@ int is_base( char a )
     case 'd':
     case 'D':
       return 10;
+//    case 'a':
+//    case 'A':
+//      return 1; // This is for 'ascii', I can't see how to use a base of 1.
+/**/
     case 'a':
     case 'A':
-      return 1; // This is for 'ascii', I can't see how to use a base of 1.
+      return 256;
     default:
       return 0;
     }
@@ -1311,7 +1329,7 @@ change_base2 (int idx, sb *in, sb *out)
 	  int base;
 	  int value;
 	  base = is_base( in->ptr[idx + 1 ] );
-
+/**//*
 	  if ( base == 1 ) // An ascii char
 	    {
 	      idx += 2;
@@ -1330,11 +1348,12 @@ change_base2 (int idx, sb *in, sb *out)
 		}
 	    }
 	  else // number
-	    {
+	    {*/
 	      idx += 2;
 	      if ( idx < in->len &&
 		   ( in->ptr[ idx ] != '\t' &&
 		     in->ptr[ idx ] != ' ' &&
+		     in->ptr[ idx ] != ',' &&
 		     in->ptr[ idx ] != comment_char ) )
 		{ // This really is a number, we think
 		  idx = sb_strtol (idx, in, base, &value);
@@ -1346,7 +1365,7 @@ change_base2 (int idx, sb *in, sb *out)
 		  sb_add_char( out, in->ptr[ idx - 2 ] );
 		  sb_add_char( out, in->ptr[ idx - 1 ] );
 		}
-	    }
+/*	    }*/
 	}
       else if (ISFIRSTCHAR (in->ptr[idx]))
 	{
@@ -3414,6 +3433,7 @@ chartype_init ()
 	chartype[x] |= SEPBIT;
 
       if (x == 'b' || x == 'B'
+	  || x == 'a' || x == 'A'	/**/
 	  || x == 'q' || x == 'Q'
 	  || x == 'h' || x == 'H'
 	  || x == 'd' || x == 'D')
