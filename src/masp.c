@@ -1,4 +1,4 @@
-/**//* masp.c - MASP Assembly Preprocessor main program.
+asdf/**//* masp.c - MASP Assembly Preprocessor main program.
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
    Free Software Foundation, Inc.
    Copyright 2003 Johann Gunnar Oskarsson
