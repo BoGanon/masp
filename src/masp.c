@@ -737,13 +737,14 @@ level_0 (idx, string, lhs)
   if ( is_flonum( idx, string ) ) // myrkraverk
     {
       sb buf;
+      double d;
       sb_new (&buf);
       sb_add_sb (&buf, string);
       sb_add_char (&buf, '\0');
       //  if (regexec (&reg, &buf.ptr[idx], 1, &match, 0) != 0)
 
       //      printf("flonum!!!\n");
-      double d = atof( &buf.ptr[idx] );
+      d = atof( &buf.ptr[idx] );
       lhs->d_value = d;
       
       lhs->type = exp_t_double;
@@ -865,7 +866,7 @@ level_2 (idx, string, lhs)
 	    }
 	  break;
 	case '/':
-	  printf("division\n"); // myrk
+	  //printf("division\n"); // myrk
 	  checkconst ('/', lhs);
 	  checkconst ('/', &rhs);
 	  if ( rhs.type == exp_t_int && rhs.value == 0)
@@ -878,7 +879,7 @@ level_2 (idx, string, lhs)
 		break;
 	      case exp_t_double:
 		lhs->d_value /= rhs.d_value;
-		printf("double division\n"); //myrk
+		//printf("double division\n"); //myrk
 		break;
 	      }
 	  break;
