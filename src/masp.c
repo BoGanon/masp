@@ -139,6 +139,74 @@ struct {
 
 int ifi;
 
+/* What to do with all the keywords.  */
+#define PROCESS 	0x1000  /* Run substitution over the line.  */
+#define LAB		0x2000  /* Spit out the label.  */
+
+#define K_EQU 		(PROCESS|1)
+#define K_ASSIGN 	(PROCESS|2)
+#define K_REG 		(PROCESS|3)
+#define K_ORG 		(PROCESS|4)
+#define K_RADIX 	(PROCESS|5)
+#define K_DATA 		(LAB|PROCESS|6)
+#define K_DATAB 	(LAB|PROCESS|7)
+#define K_SDATA 	(LAB|PROCESS|8)
+#define K_SDATAB 	(LAB|PROCESS|9)
+#define K_SDATAC 	(LAB|PROCESS|10)
+#define K_SDATAZ	(LAB|PROCESS|11)
+#define K_RES 		(LAB|PROCESS|12)
+#define K_SRES 		(LAB|PROCESS|13)
+#define K_SRESC 	(LAB|PROCESS|14)
+#define K_SRESZ 	(LAB|PROCESS|15)
+#define K_EXPORT 	(LAB|PROCESS|16)
+#define K_GLOBAL 	(LAB|PROCESS|17)
+#define K_PRINT 	(LAB|PROCESS|19)
+#define K_FORM 		(LAB|PROCESS|20)
+#define K_HEADING	(LAB|PROCESS|21)
+#define K_PAGE		(LAB|PROCESS|22)
+#define K_IMPORT	(LAB|PROCESS|23)
+#define K_PROGRAM	(LAB|PROCESS|24)
+#define K_END		(PROCESS|25)
+#define K_INCLUDE	(PROCESS|26)
+#define K_IGNORED	(PROCESS|27)
+#define K_ASSIGNA	(PROCESS|28)
+#define K_ASSIGNC	(29)
+#define K_AIF		(PROCESS|30)
+#define K_AELSE		(PROCESS|31)
+#define K_AENDI		(PROCESS|32)
+#define K_AREPEAT	(PROCESS|33)
+#define K_AENDR		(PROCESS|34)
+#define K_AWHILE	(35)
+#define K_AENDW		(PROCESS|36)
+#define K_EXITM		(37)
+#define K_MACRO		(PROCESS|38)
+#define K_ENDM		(39)
+#define K_ALIGN		(PROCESS|LAB|40)
+#define K_ALTERNATE     (41)
+#define K_DB		(LAB|PROCESS|42)
+#define K_DW		(LAB|PROCESS|43)
+#define K_DL		(LAB|PROCESS|44)
+#define K_LOCAL		(45)
+#define K_IFEQ		(PROCESS|46)
+#define K_IFNE		(PROCESS|47)
+#define K_IFLT		(PROCESS|48)
+#define K_IFLE		(PROCESS|49)
+#define K_IFGE		(PROCESS|50)
+#define K_IFGT		(PROCESS|51)
+#define K_IFC		(PROCESS|52)
+#define K_IFNC		(PROCESS|53)
+#define K_IRP		(PROCESS|54)
+#define K_IRPC		(PROCESS|55)
+// New directives here:
+#define K_MASP          (56)
+#define K_GASP          (57)
+#define K_SET           (58)
+#define K_IFMODE        (59)
+#define K_ENDIFMODE     (60)
+#define K_ELSEIFMODE    (61)
+#define K_EXPR          (62)
+
+
 /* The final and intermediate results of expression evaluation are kept in
    exp_t's.  Note that a symbol is not an sb, but a pointer into the input
    line.  It must be coped somewhere safe before the next line is read in.  */
@@ -148,8 +216,17 @@ typedef struct {
   int len;
 } symbol;
 
+typedef enum {
+  exp_t_int,
+  exp_t_float,
+  exp_t_double
+} exp_t_type;
+
 typedef struct {
   int value;			/* Constant part.  */
+  float f_value;
+  double d_value;
+  exp_t_type type;
   symbol add_symbol;		/* Name part.  */
   symbol sub_symbol;		/* Name part.  */
 } exp_t;
@@ -655,8 +732,28 @@ level_0 (idx, string, lhs)
   idx = sb_skip_white (idx, string);
 
   lhs->value = 0;
+  lhs->type = exp_t_int;
 
-  if (ISDIGIT (string->ptr[idx]))
+  if ( is_flonum( idx, string ) ) // myrkraverk
+    {
+      sb buf;
+      sb_new (&buf);
+      sb_add_sb (&buf, string);
+      sb_add_char (&buf, '\0');
+      //  if (regexec (&reg, &buf.ptr[idx], 1, &match, 0) != 0)
+
+      //      printf("flonum!!!\n");
+      double d = atof( &buf.ptr[idx] );
+      lhs->d_value = d;
+      
+      lhs->type = exp_t_double;
+      //      printf( "%f\n", d );
+      idx = chew_flonum( idx, string, &buf );
+      //      while ( string->ptr[idx] == 
+
+      sb_kill(&buf);
+    }
+  else if (ISDIGIT (string->ptr[idx]))
     {
       idx = sb_strtol (idx, string, 10, &lhs->value);
     }
@@ -709,7 +806,14 @@ level_1 (idx, string, lhs)
       {
 	symbol t;
 	idx = level_1 (idx + 1, string, lhs);
-	lhs->value = -lhs->value;
+	switch ( lhs->type )
+	  {
+	  case exp_t_int:
+	    lhs->value = -lhs->value;
+	    break;
+	  case exp_t_double:
+	    lhs->d_value = -lhs->d_value;
+	  }
 	t = lhs->add_symbol;
 	lhs->add_symbol = lhs->sub_symbol;
 	lhs->sub_symbol = t;
@@ -750,15 +854,33 @@ level_2 (idx, string, lhs)
 	case '*':
 	  checkconst ('*', lhs);
 	  checkconst ('*', &rhs);
-	  lhs->value *= rhs.value;
+	  switch ( lhs->type )
+	    {
+	    case exp_t_int:
+	      lhs->value *= rhs.value;
+	      break;
+	    case exp_t_double:
+	      lhs->d_value *= rhs.d_value;
+	      break;
+	    }
 	  break;
 	case '/':
+	  printf("division\n"); // myrk
 	  checkconst ('/', lhs);
 	  checkconst ('/', &rhs);
-	  if (rhs.value == 0)
+	  if ( rhs.type == exp_t_int && rhs.value == 0)
 	    ERROR ((stderr, _("attempt to divide by zero.\n")));
 	  else
-	    lhs->value /= rhs.value;
+	    switch( lhs->type )
+	      {
+	      case exp_t_int:
+		lhs->value /= rhs.value;
+		break;
+	      case exp_t_double:
+		lhs->d_value /= rhs.d_value;
+		printf("double division\n"); //myrk
+		break;
+	      }
 	  break;
 	}
     }
@@ -1572,6 +1694,37 @@ static void do_ifmode( int idx,  sb *in )
   return;
 }
 
+static int do_expr( int idx, sb *in, sb *out )
+{
+  exp_t res;
+  char a[256];
+  int l;
+  if ( in->ptr[idx] == '(' )
+    idx++;
+  idx = exp_parse (idx, in, &res);
+
+  if ( res.type == exp_t_double )
+    {
+      l = snprintf( a, 255, "%f", res.d_value );
+      sb_add_buffer( out, a, l );
+    }
+  if ( in->ptr[idx] == ')' )
+    idx++;
+  return idx;
+
+  
+  //if ( res.type == exp_t_double )
+  //    printf("%f\n", res.d_value );
+  //  if (res.add_symbol.len || res.sub_symbol.len)
+  //    ERROR ((stderr, "%s", emsg));
+  //  *val = res.value;
+  //  return idx;
+
+
+  //  printf("Doing EXPR");
+}
+
+
 static void do_elseifmode( int idx, sb *in )
 {
   ifstack[ifi].on = ifstack[ifi - 1].on ? !ifstack[ifi].on : 0;
@@ -2200,6 +2353,59 @@ process_assigns (idx, in, buf)
 	{
 	  idx = condass_lookup_name (in, idx + 2, buf, 0);
 	}
+      else if (in->ptr[idx] == '\\' ) // myrk: keyword ?
+	{
+	  sb acc;
+	  char *e;
+	  hash_entry *ptr;
+	  
+/* typedef enum { */
+/*   hash_integer,			/\* Name->integer mapping.  *\/ */
+/*   hash_string,			/\* Name->string mapping.  *\/ */
+/*   hash_macro,			/\* Name is a macro.  *\/ */
+/*   hash_formal			/\* Name is a formal argument.  *\/ */
+/* } hash_type; */
+
+/* typedef struct hs { */
+/*   sb key;			/\* Symbol name.  *\/ */
+/*   hash_type type;		/\* Symbol meaning.  *\/ */
+/*   union { */
+/*     sb s; */
+/*     int i; */
+/*     struct macro_struct *m; */
+/*     struct formal_struct *f; */
+/*   } value; */
+/*   struct hs *next;		/\* Next hash_entry with same hash key.  *\/ */
+/* } hash_entry; */
+
+
+	  sb_new (&acc);
+
+	  //	  printf("new hash look\n");
+
+	  idx++;
+
+	  //	  in = line->ptr + idx;
+	  //	  s = in;
+	  e = in->ptr + idx;
+	  //	  sb_reset (acc);
+
+	  while (idx < in->len && *e && ISFIRSTCHAR (*e))
+	    {
+	      sb_add_char (&acc, *e);
+	      e++;
+	      idx++;
+	    }
+	  ptr = hash_lookup (&keyword_hash_table, &acc);
+	  //	  printf ( "Hash stuff: %d", ptr->value.i );
+
+	  switch( ptr->value.i )
+	    {
+	    case K_EXPR:
+	      idx = do_expr( idx, in, buf );
+	    }
+	  sb_kill (&acc);
+	}
       else if (idx + 3 < in->len
 	       && in->ptr[idx] == '.'
 	       && TOUPPER (in->ptr[idx + 1]) == 'L'
@@ -2338,6 +2544,8 @@ process_file ()
 			       || ! ISFIRSTCHAR (line.ptr[lx + 6])))
 		    do_assigns = 0;
 		}
+	      else if (l < line.len && ( line.ptr[l] == '\\') )
+		       printf( "blah" );
 
 	      if (do_assigns)
 		process_assigns (0, &label_in, &label);
@@ -3447,71 +3655,6 @@ chartype_init ()
     }
 }
 
-/* What to do with all the keywords.  */
-#define PROCESS 	0x1000  /* Run substitution over the line.  */
-#define LAB		0x2000  /* Spit out the label.  */
-
-#define K_EQU 		(PROCESS|1)
-#define K_ASSIGN 	(PROCESS|2)
-#define K_REG 		(PROCESS|3)
-#define K_ORG 		(PROCESS|4)
-#define K_RADIX 	(PROCESS|5)
-#define K_DATA 		(LAB|PROCESS|6)
-#define K_DATAB 	(LAB|PROCESS|7)
-#define K_SDATA 	(LAB|PROCESS|8)
-#define K_SDATAB 	(LAB|PROCESS|9)
-#define K_SDATAC 	(LAB|PROCESS|10)
-#define K_SDATAZ	(LAB|PROCESS|11)
-#define K_RES 		(LAB|PROCESS|12)
-#define K_SRES 		(LAB|PROCESS|13)
-#define K_SRESC 	(LAB|PROCESS|14)
-#define K_SRESZ 	(LAB|PROCESS|15)
-#define K_EXPORT 	(LAB|PROCESS|16)
-#define K_GLOBAL 	(LAB|PROCESS|17)
-#define K_PRINT 	(LAB|PROCESS|19)
-#define K_FORM 		(LAB|PROCESS|20)
-#define K_HEADING	(LAB|PROCESS|21)
-#define K_PAGE		(LAB|PROCESS|22)
-#define K_IMPORT	(LAB|PROCESS|23)
-#define K_PROGRAM	(LAB|PROCESS|24)
-#define K_END		(PROCESS|25)
-#define K_INCLUDE	(PROCESS|26)
-#define K_IGNORED	(PROCESS|27)
-#define K_ASSIGNA	(PROCESS|28)
-#define K_ASSIGNC	(29)
-#define K_AIF		(PROCESS|30)
-#define K_AELSE		(PROCESS|31)
-#define K_AENDI		(PROCESS|32)
-#define K_AREPEAT	(PROCESS|33)
-#define K_AENDR		(PROCESS|34)
-#define K_AWHILE	(35)
-#define K_AENDW		(PROCESS|36)
-#define K_EXITM		(37)
-#define K_MACRO		(PROCESS|38)
-#define K_ENDM		(39)
-#define K_ALIGN		(PROCESS|LAB|40)
-#define K_ALTERNATE     (41)
-#define K_DB		(LAB|PROCESS|42)
-#define K_DW		(LAB|PROCESS|43)
-#define K_DL		(LAB|PROCESS|44)
-#define K_LOCAL		(45)
-#define K_IFEQ		(PROCESS|46)
-#define K_IFNE		(PROCESS|47)
-#define K_IFLT		(PROCESS|48)
-#define K_IFLE		(PROCESS|49)
-#define K_IFGE		(PROCESS|50)
-#define K_IFGT		(PROCESS|51)
-#define K_IFC		(PROCESS|52)
-#define K_IFNC		(PROCESS|53)
-#define K_IRP		(PROCESS|54)
-#define K_IRPC		(PROCESS|55)
-// New directives here:
-#define K_MASP          (56)
-#define K_GASP          (57)
-#define K_SET           (58)
-#define K_IFMODE        (59)
-#define K_ENDIFMODE     (60)
-#define K_ELSEIFMODE    (61)
 
 struct keyword {
   char *name;
@@ -3573,6 +3716,7 @@ static struct keyword kinfo[] = {
   { "ELSEIFM", K_ELSEIFMODE, 0 },
   { "ENDIFMODE", K_ENDIFMODE, 0 },
   { "ENDIFM", K_ENDIFMODE, 0 },
+  { "EXPR", K_EXPR, 0 },
   { NULL, 0, 0 }
 };
 
@@ -4165,6 +4309,9 @@ process_pseudo_op2 (idx, line, acc)
 	    case K_SET:
 	      do_set( idx, line );
 	      return 1;
+	    case K_EXPR:
+	      //	      do_expr( idx, line );
+	      return 1;
 	    }
 	}
     }
@@ -4212,6 +4359,7 @@ process_init ()
 	add_keyword (mrikinfo[i].name, mrikinfo[i].code);
     }
 }
+
 
 static void
 do_define (string)
@@ -4282,24 +4430,23 @@ show_usage (file, status)
   // Removed references of alternate and mri mode
   //   [-a]      [--alternate]         enter alternate macro mode
   //   [-M]      [--mri]               enter MRI compatibility mode
-  fprintf (file, _("\
-Usage: %s \n\
-  [-c char] [--commentchar char]  change the comment character from !\n\
-  [-d]      [--debug]             print some debugging info\n\
-  [-h]      [--help]              print this message\n\
-  [-o out]  [--output out]        set the output file\n\
-  [-p]      [--print]             print line numbers\n"), program_name);
-  fprintf (file, _("\
-  [-s]      [--copysource]        copy source through as comments \n\
-  [-u]      [--unreasonable]      allow unreasonable nesting\n\
-  [-v]      [--version]           print the program version\n\
-  [-Dname=value]                  create preprocessor variable called name,\n\
-                                  with value\n\
-  [-Ipath]                        add to include path list\n\
-  [-P char] [--prefixchar char]   use char to prefix MASP directives\n\
-                                  the default is '\\'\n\
-  [-l]      [--line-numbers]      include line number info in output\n
-  [in-file]\n"));
+/*   fprintf (file, _(" */
+/* Usage: %s \n\" */
+/*   [-c char] [--commentchar char]  change the comment character from !\n\ */
+/*   [-d]      [--debug]             print some debugging info\n\ */
+/*   [-h]      [--help]              print this message\n\ */
+/*   [-o out]  [--output out]        set the output file\n\ */
+/*   [-p]      [--print]             print line numbers\n */
+/*   [-s]      [--copysource]        copy source through as comments \n\ */
+/*   [-u]      [--unreasonable]      allow unreasonable nesting\n\ */
+/*   [-v]      [--version]           print the program version\n\ */
+/*   [-Dname=value]                  create preprocessor variable called name,\n\ */
+/*                                   with value\n\ */
+/*   [-Ipath]                        add to include path list\n\ */
+/*   [-P char] [--prefixchar char]   use char to prefix MASP directives\n\ */
+/*                                   the default is '\\'\n\ */
+/*   [-l]      [--line-numbers]      include line number info in output\n */
+/*   [in-file]\n")); */
   if (status == 0)
     printf (_("Report bugs to %s\n"), REPORT_BUGS_TO);
   exit (status);
