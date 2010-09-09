@@ -4431,23 +4431,23 @@ show_usage (file, status)
   // Removed references of alternate and mri mode
   //   [-a]      [--alternate]         enter alternate macro mode
   //   [-M]      [--mri]               enter MRI compatibility mode
-/*   fprintf (file, _(" */
-/* Usage: %s \n\" */
-/*   [-c char] [--commentchar char]  change the comment character from !\n\ */
-/*   [-d]      [--debug]             print some debugging info\n\ */
-/*   [-h]      [--help]              print this message\n\ */
-/*   [-o out]  [--output out]        set the output file\n\ */
-/*   [-p]      [--print]             print line numbers\n */
-/*   [-s]      [--copysource]        copy source through as comments \n\ */
-/*   [-u]      [--unreasonable]      allow unreasonable nesting\n\ */
-/*   [-v]      [--version]           print the program version\n\ */
-/*   [-Dname=value]                  create preprocessor variable called name,\n\ */
-/*                                   with value\n\ */
-/*   [-Ipath]                        add to include path list\n\ */
-/*   [-P char] [--prefixchar char]   use char to prefix MASP directives\n\ */
-/*                                   the default is '\\'\n\ */
-/*   [-l]      [--line-numbers]      include line number info in output\n */
-/*   [in-file]\n")); */
+   fprintf (file,
+"Usage: %s \n"
+"   [-c char] [--commentchar char]  change the comment character from !\n"
+"   [-d]      [--debug]             print some debugging info\n"
+"   [-h]      [--help]              print this message\n"
+"   [-o out]  [--output out]        set the output file\n"
+"   [-p]      [--print]             print line numbers\n"
+"   [-s]      [--copysource]        copy source through as comments \n"
+"   [-u]      [--unreasonable]      allow unreasonable nesting\n"
+"   [-v]      [--version]           print the program version\n"
+"   [-Dname=value]                  create preprocessor variable called name,\n"
+"                                   with value\n"
+"   [-Ipath]                        add to include path list\n"
+"   [-P char] [--prefixchar char]   use char to prefix MASP directives\n"
+"                                   the default is '.'\n"
+"   [-l]      [--line-numbers]      include line number info in output\n"
+"   [in-file]\n",program_name);
   if (status == 0)
     printf (_("Report bugs to %s\n"), REPORT_BUGS_TO);
   exit (status);
@@ -4473,7 +4473,7 @@ main (argc, argv)
   char *out_name = 0;
   sp = include_stack;
 
-  cml_prefix_char = prefix_char = '\\'; // The default
+  cml_prefix_char = prefix_char = '.'; // The default
   masp_syntax = 1; // The default
   line_info = 0; // Default
   

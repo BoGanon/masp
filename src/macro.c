@@ -1,4 +1,4 @@
-asdf/**//* macro.c - macro support for masp
+/**//* macro.c - macro support for masp
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
    Free Software Foundation, Inc.
    Copyright 2003 Johann Gunnar Oskarsson
@@ -357,11 +357,13 @@ getstring (idx, in, acc)
 
 static int get_until_comma( int idx, sb *in, sb *out )
 {
+	extern char comment_char;
   int ws;
   sb_reset (out);
   idx = sb_skip_white (idx, in);
   ws = 0;
   //printf( "get_until_comma\n" );
+
   while ( idx < in->len ) // && in->ptr[ idx ] != ',' )
     {
       if ( in->ptr[ idx ] == ' ' || in->ptr[ idx ] == '\t' )
@@ -371,6 +373,8 @@ static int get_until_comma( int idx, sb *in, sb *out )
 	}
       else
 	{
+	  if ( in->ptr[ idx ] == comment_char )
+	    break;
 	  if ( in->ptr[ idx ] == ',' )
 	    break;
 	  if ( ws )
@@ -1237,7 +1241,7 @@ macro_expand2 (idx, in, m, out, comment_char)
 
   /* Peel off the actuals and store them away in the hash tables' actuals.  */
   idx = sb_skip_white (idx, in);
-  while (idx < in->len && in->ptr[idx] != comment_char)
+  while (idx < in->len && (in->ptr[idx] != comment_char))
     {
       int scan;
 
@@ -1246,11 +1250,14 @@ macro_expand2 (idx, in, m, out, comment_char)
       while (scan < in->len
 	     && !ISSEP (in->ptr[scan])
 	     && !(macro_mri && in->ptr[scan] == '\'')
-	     && (!macro_alternate && in->ptr[scan] != '='))
+	     && (!macro_alternate && in->ptr[scan] != '=')
+	     && (in->ptr[scan] != comment_char))
 	scan++;
+
       if (scan < in->len && !macro_alternate && in->ptr[scan] == '=')
 	{
 	  is_keyword = 1;
+
 
 	  /* It's OK to go from positional to keyword.  */
 
@@ -1283,6 +1290,7 @@ macro_expand2 (idx, in, m, out, comment_char)
 	  is_positional = 1;
 	  if (is_keyword)
 	    return _("can't mix positional and keyword arguments");
+
 
 	  if (!f)
 	    {

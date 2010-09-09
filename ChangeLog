@@ -1,3 +1,13 @@
+2004-10-17  Jesper Svennevid
+
+	Started tweaking MASP to better suit preprocessing VCL source-files
+
+	* masp.c: Changed default comment character back to ';'
+
+	* masp.c: Changed default prefix character to '.'
+
+	* macro.c: Added hardcoded check for comment-character in get_until_comma()
+
 2003-05-12  Jóhann Gunnar Óskarsson  <myrkraverk@users.sourceforge.net>
 
 	* masp.c: Fixed a nasty segfault when trying to use \ifmode

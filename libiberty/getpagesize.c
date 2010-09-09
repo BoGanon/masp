@@ -19,7 +19,7 @@ BUGS
 	value.
 
 */
-
+#if 0
 #ifndef VMS
 
 #include "config.h"
@@ -88,3 +88,4 @@ int getpagesize ()
 }
 
 #endif /* VMS */
+#endif
